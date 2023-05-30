@@ -16,18 +16,18 @@ if __name__ == "__main__":
 
     start_time = time.time()
 
-
-    UBCF = UserBasedCF.remote(ratings,
-                            movies,
-                            numberOfSimilarUsers=10,
-                            similarityThreshold=0.3)
+    cluster_size = 2
+    actors = [UserBasedCF.remote(ratings,
+                                movies,
+                                numberOfSimilarUsers=10,
+                                similarityThreshold=0.3) for _ in range(cluster_size)]
     
-    ubcf_ref = ray.put(UBCF)
 
     #futures = [calc.remote(UBCF, i) for i in range(1,10)]
     futures = []
     for id in range(1,100):
-        ref = calc.remote(UBCF, id)
+        cluster_id = id%cluster_size
+        ref = calc.remote(actors[cluster_id], id)
         futures.append(ref)
         #time.sleep(0.5)
 
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     
     counter = 1
     for x in output:
-        #print("=== {} recomendation ===".format(counter))      
+        print("=== {} recomendation ===".format(counter))      
         print(ray.get(x).head(5))
         counter += 1
   
