@@ -10,15 +10,15 @@ from ray.util.placement_group import (
 from ray.util.scheduling_strategies import PlacementGroupSchedulingStrategy
 
 if __name__ == "__main__":
-    ray.init(_node_ip_address='192.168.100.146')
+    ray.init(_node_ip_address='192.168.1.70')
 
     ratings = pd.read_csv('data/ml-latest-small/ratings.csv')
     movies = pd.read_csv('data/ml-latest-small/movies.csv')
 
     start_time = time.time()
 
-
     cluster_size = 4
+    actors_size = cluster_size*4
     pg_list = [{"CPU": 4} for _ in range(cluster_size)]
     pg = placement_group(pg_list, strategy="SPREAD")
     
@@ -28,13 +28,13 @@ if __name__ == "__main__":
         actors = [UserBasedCF.remote(ratings,
                                     movies,
                                     numberOfSimilarUsers=10,
-                                    similarityThreshold=0.3) for _ in range(cluster_size)]
+                                    similarityThreshold=0.3) for _ in range(actors_size)]
         
 
         futures = []
         for id in range(1,300):
-            cluster_id = id%cluster_size
-            ref = actors[cluster_id].generateRecomendations.remote(id)
+            actor_id = id%actors_size
+            ref = actors[actor_id].generateRecomendations.remote(id)
             futures.append(ref)
             #time.sleep(0.5)
 
@@ -43,7 +43,7 @@ if __name__ == "__main__":
         counter = 1
         for x in ray.get(futures):
             print("=== {} recomendation ===".format(counter))      
-            print(x.head(5))
+            #print(x.head(5))
             counter += 1
     
         #print(ray.get(output[88]).head(5))
