@@ -6,7 +6,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import ray
 import operator
 
-
+@ray.remote
 class ItemBasedCF():
     def __init__(self, ratings, movies, number_of_similar_items, number_of_recommendations):
         self.ratings = ratings
