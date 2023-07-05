@@ -1,6 +1,7 @@
 import ray
 import time
 from cbcf import UserBasedCF
+from ibcf import ItemBasedCF
 import pandas as pd
 from ray.util.placement_group import (
     placement_group,
@@ -25,11 +26,16 @@ if __name__ == "__main__":
     try:
         ray.get(pg.ready(), timeout=10)
 
-        actors = [UserBasedCF.remote(ratings,
-                                    movies,
-                                    numberOfSimilarUsers=10,
-                                    similarityThreshold=0.3) for _ in range(actors_size)]
+        # actors = [UserBasedCF.remote(ratings,
+        #                             movies,
+        #                             numberOfSimilarUsers=10,
+        #                             similarityThreshold=0.3) for _ in range(actors_size)]
         
+        actors = [ItemBasedCF.remote(ratings,
+                                    movies,
+                                    number_of_similar_items=5,
+                                    number_of_recommendations=3) for _ in range(actors_size)]
+
 
         futures = []
         for id in range(1,300):
@@ -50,7 +56,5 @@ if __name__ == "__main__":
         print(time.time() - start_time)
 
     except Exception as e:
-        print(
-            "Cannot create a placement group because "
-        )
+        print("Cannot create a placement group because ")
         print(e)
