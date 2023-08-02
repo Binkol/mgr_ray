@@ -6,7 +6,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import ray
 import operator
 
-@ray.remote
+#@ray.remote
 class ItemBasedCF():
     def __init__(self, ratings, movies, number_of_similar_items, number_of_recommendations):
         self.ratings = ratings
@@ -61,12 +61,31 @@ class ItemBasedCF():
 
 
 if __name__ == "__main__":
-    ratings = pd.read_csv('data/ml-latest-small/ratings.csv')
-    movies = pd.read_csv('data/ml-latest-small/movies.csv')
-    ibcf = ItemBasedCF(ratings,
-                       movies,
-                       number_of_similar_items=5,
-                       number_of_recommendations=3)
+    # ratings = pd.read_csv('data/ml-latest-small/ratings.csv')
+    # movies = pd.read_csv('data/ml-latest-small/movies.csv')
     
-    rec = ibcf.generateRecomendations(1)
-    print(rec)
+    ratings = pd.read_csv('data/kaggle/ratings_small.csv')
+    kaggle_movies = pd.read_csv('data/kaggle/movies_metadata.csv', low_memory=False)
+    movies = kaggle_movies[['id','title']]
+    movies = movies.rename(columns = {'id':'movieId'})
+    movies = movies[(movies.movieId != "1997-08-20") & 
+                   (movies.movieId != "2012-09-29") & 
+                   (movies.movieId != "2014-01-01")]
+    movies = movies.astype({'movieId': 'int64'})
+
+    movies10k = movies[movies['movieId'] <= 10000]
+    movies20k = movies[movies['movieId'] <= 20000]
+    movies30k = movies[movies['movieId'] <= 30000]
+
+    #print(ratings.info())
+    #print(movies.info())
+
+    ibcf = ItemBasedCF(ratings,
+                       movies30k,
+                       number_of_similar_items=5,
+                       number_of_recommendations=5)
+    
+    for x in range(1,151):
+        print("==========STARTING {} =========".format(x))
+        rec = ibcf.generateRecomendations(x)
+        print(rec)

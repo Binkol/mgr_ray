@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 from sklearn.metrics.pairwise import cosine_similarity
 import ray
 
-@ray.remote
+#@ray.remote
 class UserBasedCF():
     def __init__(self, ratings, movies, numberOfSimilarUsers, similarityThreshold):
         self.ratings = ratings
@@ -76,14 +76,33 @@ class UserBasedCF():
 
 
 if __name__ == "__main__":
-    UBCF = UserBasedCF('data/ml-latest-small/ratings.csv',
-                       'data/ml-latest-small/movies.csv',
+    # ratings = pd.read_csv('data/ml-latest-small/ratings.csv')
+    # movies = pd.read_csv('data/ml-latest-small/movies.csv')
+
+    ratings = pd.read_csv('data/kaggle/ratings_small.csv')
+    kaggle_movies = pd.read_csv('data/kaggle/movies_metadata.csv', low_memory=False)
+    movies = kaggle_movies[['id','title']]
+    movies = movies.rename(columns = {'id':'movieId'})
+    movies = movies[(movies.movieId != "1997-08-20") & 
+                   (movies.movieId != "2012-09-29") & 
+                   (movies.movieId != "2014-01-01")]
+    movies = movies.astype({'movieId': 'int64'})
+
+
+    ratings150 = ratings[ratings['userId'] <= 150]
+    ratings300 = ratings[ratings['userId'] <= 300]
+    ratings600 = ratings[ratings['userId'] <= 600]
+
+
+
+    UBCF = UserBasedCF(ratings150,
+                       movies,
                        numberOfSimilarUsers=10,
                        similarityThreshold=0.3)
     
     #reco = UBCF.generateRecomendations(2)
     #print(reco.head(10))
-    for x in range(1,10):
+    for x in range(1,151):
         print("==========STARTING {} =========".format(x))
         reco = UBCF.generateRecomendations(x)
         print(reco.head(5))
