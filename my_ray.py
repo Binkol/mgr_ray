@@ -2,6 +2,7 @@ import ray
 import time
 from cbcf import UserBasedCF
 from ibcf import ItemBasedCF
+from cbr import CBR
 import pandas as pd
 from ray.util.placement_group import (
     placement_group,
@@ -13,9 +14,28 @@ from ray.util.scheduling_strategies import PlacementGroupSchedulingStrategy
 if __name__ == "__main__":
     ray.init(_node_ip_address='192.168.1.70')
 
-    ratings = pd.read_csv('data/ml-latest-small/ratings.csv')
-    movies = pd.read_csv('data/ml-latest-small/movies.csv')
+    # ratings = pd.read_csv('data/ml-latest-small/ratings.csv')
+    # movies = pd.read_csv('data/ml-latest-small/movies.csv')
 
+    ratings = pd.read_csv('data/kaggle/ratings_small.csv')
+    kaggle_movies = pd.read_csv('data/kaggle/movies_metadata.csv', low_memory=False)
+    movies = kaggle_movies[['id','title']]
+    movies = movies.rename(columns = {'id':'movieId'})
+    movies = movies[(movies.movieId != "1997-08-20") & 
+                   (movies.movieId != "2012-09-29") & 
+                   (movies.movieId != "2014-01-01")]
+    movies = movies.astype({'movieId': 'int64'})
+
+    movies10k = movies[movies['movieId'] <= 10000]
+    movies20k = movies[movies['movieId'] <= 20000]
+    movies30k = movies[movies['movieId'] <= 30000]
+
+    ratings150 = ratings[ratings['userId'] <= 150]
+    ratings300 = ratings[ratings['userId'] <= 300]
+    ratings600 = ratings[ratings['userId'] <= 600]
+
+    titles = movies.original_title.values.tolist()
+    
     start_time = time.time()
 
     cluster_size = 4
@@ -26,23 +46,32 @@ if __name__ == "__main__":
     try:
         ray.get(pg.ready(), timeout=10)
 
-        # actors = [UserBasedCF.remote(ratings,
+        # actors = [UserBasedCF.remote(ratings, # <--
         #                             movies,
         #                             numberOfSimilarUsers=10,
         #                             similarityThreshold=0.3) for _ in range(actors_size)]
         
-        actors = [ItemBasedCF.remote(ratings,
-                                    movies,
+        actors = [ItemBasedCF.remote(ratings, 
+                                    movies, # <--
                                     number_of_similar_items=5,
                                     number_of_recommendations=3) for _ in range(actors_size)]
 
+        #actors = [CBR.remote(movies) for _ in range(actors_size)]
+
+
+        run_cbr = False
 
         futures = []
-        for id in range(1,300):
-            actor_id = id%actors_size
-            ref = actors[actor_id].generateRecomendations.remote(id)
-            futures.append(ref)
-            #time.sleep(0.5)
+        if run_cbr:
+            for title in titles[0:300]:
+                actor_id = id%actors_size
+                ref = actors[actor_id].recommendations.remote(title, 5)
+                futures.append(ref)
+        else:
+            for id in range(1,300):
+                actor_id = id%actors_size
+                ref = actors[actor_id].generateRecomendations.remote(id)
+                futures.append(ref)
 
         #output = ray.get(futures)
         

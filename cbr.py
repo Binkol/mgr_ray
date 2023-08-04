@@ -59,6 +59,8 @@ class CBR:
     
 if __name__ == "__main__":
     movies = pd.read_csv('data/kaggle/movies_metadata.csv', low_memory=False)
+    titles = movies.original_title.values.tolist()
+    print(titles[0:10])
     cbr = CBR(movies)
     rec = cbr.recommendations("True Lies", 5)
     print(rec)
