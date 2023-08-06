@@ -6,7 +6,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 import seaborn as sns
 import numpy as np
 import matplotlib.pyplot as plt
+import ray
 
+@ray.remote
 class CBR:
     def __init__(self, movies):
         self.movies = movies
@@ -39,7 +41,7 @@ class CBR:
 
     def index_from_title(self, df, title):
         #print(df[df['original_title']==title].index.values[0], "BBBBBBB")
-        return df[df['original_title']==title].index.values[0]
+        return df[df['title']==title].index.values[0]
 
     # function that returns the title of the movie from its index
     def title_from_index(self, df, index):
@@ -52,11 +54,11 @@ class CBR:
 
     # generating recommendations for given title
     def recommendations(self, original_title, number_of_recommendations):
-        index = self.index_from_title(movies,original_title)
+        index = self.index_from_title(self.movies,original_title) #<-- set movies instead of df because parsed dataset throws errors.
         similarity_scores = list(enumerate(self.cosine_similarity_matrix[index]))
         similarity_scores_sorted = sorted(similarity_scores, key=lambda x: x[1], reverse=True)
         recommendations_indices = [t[0] for t in similarity_scores_sorted[1:(number_of_recommendations+1)]]
-        return self.df['original_title'].iloc[recommendations_indices]
+        return self.df['title'].iloc[recommendations_indices]
     
 if __name__ == "__main__":
     movies = pd.read_csv('data/kaggle/movies_metadata.csv', low_memory=False)
