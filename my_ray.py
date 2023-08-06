@@ -2,7 +2,7 @@ import ray
 import time
 from ubcf import UserBasedCF
 from ibcf import ItemBasedCF
-from cbr import CBR
+from cbr2 import CBR
 import pandas as pd
 from ray.util.placement_group import (
     placement_group,
@@ -19,29 +19,28 @@ if __name__ == "__main__":
 
     ratings = pd.read_csv('/root/data/kaggle/ratings_small.csv')
     kaggle_movies = pd.read_csv('/root/data/kaggle/movies_metadata.csv', low_memory=False)
-    movies = kaggle_movies[['id','title']]
-    movies = movies.rename(columns = {'id':'movieId'})
-    movies = movies[(movies.movieId != "1997-08-20") & 
-                   (movies.movieId != "2012-09-29") & 
-                   (movies.movieId != "2014-01-01")]
-    movies = movies.astype({'movieId': 'int64'})
-
-    movies10k = movies[movies['movieId'] <= 10000]
-    movies20k = movies[movies['movieId'] <= 20000]
-    movies30k = movies[movies['movieId'] <= 30000]
-
-    ratings150 = ratings[ratings['userId'] <= 150]
-    ratings300 = ratings[ratings['userId'] <= 300]
-    ratings600 = ratings[ratings['userId'] <= 600]
-
-    half_rows = len(movies) // 2
-    quater_rows = len(movies) // 4
     
-    half_movies = movies.iloc[:half_rows].copy()
-    quater_movies = movies.iloc[:quater_rows].copy()
+    # movies = kaggle_movies[['id','title']]
+    # movies = movies.rename(columns = {'id':'movieId'})
+    # movies = movies[(movies.movieId != "1997-08-20") & 
+    #                (movies.movieId != "2012-09-29") & 
+    #                (movies.movieId != "2014-01-01")]
+    # movies = movies.astype({'movieId': 'int64'})
 
-    titles = movies.title.values.tolist()
+    # movies10k = movies[movies['movieId'] <= 10000]
+    # movies20k = movies[movies['movieId'] <= 20000]
+    # movies30k = movies[movies['movieId'] <= 30000]
+
+    # ratings150 = ratings[ratings['userId'] <= 150]
+    # ratings300 = ratings[ratings['userId'] <= 300]
+    # ratings600 = ratings[ratings['userId'] <= 600]
+
+    quater_rows = len(kaggle_movies) // 7 # /4 = 11k
+    kaggle_movies = kaggle_movies.iloc[:quater_rows].copy()
+
+    titles = kaggle_movies.title.values.tolist()
     
+
     start_time = time.time()
 
     cluster_size = 2
@@ -72,9 +71,9 @@ if __name__ == "__main__":
 
     futures = []
     if run_cbr:
-        for i, title in enumerate(titles[0:300]):
+        for i, title in enumerate(titles):
             actor_id = (i+1)%actors_size
-            ref = actors[actor_id].recommendations.remote(title, 5)
+            ref = actors[actor_id].get_recommendations.remote(title, 5)
             futures.append(ref)
     else:
         for id in range(1,300):
