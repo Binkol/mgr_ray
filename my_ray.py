@@ -35,7 +35,7 @@ if __name__ == "__main__":
     # ratings300 = ratings[ratings['userId'] <= 300]
     # ratings600 = ratings[ratings['userId'] <= 600]
 
-    quater_rows = len(kaggle_movies) // 2 # /4 = 11k
+    quater_rows = len(kaggle_movies) // 4 # /4 = 11k
     kaggle_movies = kaggle_movies.iloc[:quater_rows].copy()
 
     titles = kaggle_movies.title.values.tolist()
@@ -43,7 +43,7 @@ if __name__ == "__main__":
 
     start_time = time.time()
 
-    cluster_size = 2
+    cluster_size = 4
     actors_size = cluster_size*2
     pg_list = [{"CPU": 2} for _ in range(cluster_size)]
     pg = placement_group(pg_list, strategy="SPREAD")
@@ -64,7 +64,11 @@ if __name__ == "__main__":
     #                            number_of_similar_items=5,
     #                            number_of_recommendations=3) for _ in range(actors_size)]
 
-    actors = [CBR.remote(kaggle_movies) for _ in range(actors_size)]
+    actors = [CBR.options(
+                        scheduling_strategy=PlacementGroupSchedulingStrategy(
+                        placement_group=pg,
+                        )
+    ).remote(kaggle_movies) for _ in range(actors_size)]
 
 
     run_cbr = True

@@ -3,7 +3,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import pandas as pd
 import ray
 
-@ray.remote
+@ray.remote(num_cpus=1)
 class CBR:
     def __init__(self, metadata):
         self.metadata = metadata
