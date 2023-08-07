@@ -12,7 +12,7 @@ from ray.util.placement_group import (
 from ray.util.scheduling_strategies import PlacementGroupSchedulingStrategy
 
 if __name__ == "__main__":
-    ray.init(_node_ip_address='172.104.155.23')
+    ray.init(_node_ip_address='139.162.135.238')
 
     # ratings = pd.read_csv('data/ml-latest-small/ratings.csv')
     # movies = pd.read_csv('data/ml-latest-small/movies.csv')
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     # ratings300 = ratings[ratings['userId'] <= 300]
     # ratings600 = ratings[ratings['userId'] <= 600]
 
-    quater_rows = len(kaggle_movies) // 7 # /4 = 11k
+    quater_rows = len(kaggle_movies) // 2 # /4 = 11k
     kaggle_movies = kaggle_movies.iloc[:quater_rows].copy()
 
     titles = kaggle_movies.title.values.tolist()
